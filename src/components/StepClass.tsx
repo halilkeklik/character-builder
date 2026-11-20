@@ -79,9 +79,13 @@ export const StepClass: React.FC<StepClassProps> = ({
   const selectedClassSkills = state.selectedSkills.filter(s => allowedSkills.includes(s));
 
   // Skills already proficient from background, species, or feats
-  const bgSkills = state.selectedBackground?.skillProficiencies?.[0]
-    ? Object.keys(state.selectedBackground.skillProficiencies[0]).map(s => s.toLowerCase())
-    : [];
+  const bgSkills = (
+    state.backgroundChoices?.skills && state.backgroundChoices.skills.length > 0
+      ? state.backgroundChoices.skills
+      : (state.selectedBackground?.skillProficiencies?.[0]
+          ? Object.keys(state.selectedBackground.skillProficiencies[0])
+          : [])
+  ).map(s => s.toLowerCase());
   const humanSkill = state.speciesChoices?.humanSkill ? [state.speciesChoices.humanSkill.toLowerCase()] : [];
   const skilledSkills = [
     ...(state.speciesChoices?.humanFeatChoices?.skills || []),

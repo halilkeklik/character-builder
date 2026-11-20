@@ -4,38 +4,8 @@ import { ALL_SPELLS } from '../utils/dataLoader';
 import { SKILL_ABILITY_MAP } from '../utils/dndRules';
 import { Sparkles, Wand2, Award, Wrench, Check } from 'lucide-react';
 
-export const ARTISAN_TOOLS = [
-  "Alchemist's Supplies",
-  "Brewer's Supplies",
-  "Calligrapher's Supplies",
-  "Carpenter's Tools",
-  "Cartographer's Tools",
-  "Cobbler's Tools",
-  "Cook's Utensils",
-  "Glassblower's Tools",
-  "Jeweler's Tools",
-  "Leatherworker's Tools",
-  "Mason's Tools",
-  "Painter's Supplies",
-  "Potter's Tools",
-  "Smith's Tools",
-  "Tinker's Tools",
-  "Weaver's Tools",
-  "Woodcarver's Tools",
-];
-
-export const MUSICAL_INSTRUMENTS = [
-  "Bagpipes",
-  "Drum",
-  "Dulcimer",
-  "Flute",
-  "Horn",
-  "Lute",
-  "Lyre",
-  "Pan Flute",
-  "Shawm",
-  "Viol",
-];
+export { ARTISAN_TOOLS, MUSICAL_INSTRUMENTS } from '../utils/dataLoader';
+import { ARTISAN_TOOLS, MUSICAL_INSTRUMENTS } from '../utils/dataLoader';
 
 interface FeatCustomizerProps {
   featName: string;

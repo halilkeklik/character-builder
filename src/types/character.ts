@@ -38,6 +38,11 @@ export interface ClassChoices {
   monkTool?: string;
 }
 
+export interface BackgroundChoices {
+  skills?: string[];
+  tool?: string;
+}
+
 export interface CharacterSheetState {
   concept: CharacterConcept;
   selectedClass?: any;
@@ -45,6 +50,7 @@ export interface CharacterSheetState {
   classChoices?: ClassChoices;
   selectedSpecies?: any;
   selectedBackground?: any;
+  backgroundChoices?: BackgroundChoices;
   abilityScores: AbilityScores;
   backgroundBonus: {
     first?: AbilityKey;

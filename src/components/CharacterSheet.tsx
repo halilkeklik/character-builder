@@ -112,9 +112,13 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
   const classSaveProficiencies: string[] = (state.selectedClass?.proficiency || []).map((s: string) => s.toLowerCase());
 
   // Background Skill Proficiencies
-  const bgSkillProficiencies: string[] = state.selectedBackground?.skillProficiencies?.[0]
-    ? Object.keys(state.selectedBackground.skillProficiencies[0]).map(s => s.toLowerCase())
-    : [];
+  const bgSkillProficiencies: string[] = (
+    state.backgroundChoices?.skills && state.backgroundChoices.skills.length > 0
+      ? state.backgroundChoices.skills
+      : (state.selectedBackground?.skillProficiencies?.[0]
+          ? Object.keys(state.selectedBackground.skillProficiencies[0])
+          : [])
+  ).map(s => s.toLowerCase());
 
   const extraHumanSkills = (speciesName === 'Human' && humanSkill) ? [humanSkill.toLowerCase()] : [];
   const skilledFromHuman = (state.speciesChoices?.humanFeatChoices?.skills || []).map(s => s.toLowerCase());
@@ -159,11 +163,13 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
   if (className === 'Monk' && state.classChoices?.monkTool) {
     classTools.push(state.classChoices.monkTool);
   }
+  const bgCustomTool = state.backgroundChoices?.tool ? [state.backgroundChoices.tool] : [];
   const bgFixedTools = state.selectedBackground?.toolProficiencies?.[0]
     ? Object.keys(state.selectedBackground.toolProficiencies[0]).filter(t => !t.startsWith('any'))
     : [];
+  const effectiveBgTools = bgCustomTool.length > 0 ? bgCustomTool : bgFixedTools;
 
-  const allDisplayTools = Array.from(new Set([...classTools, ...bgFixedTools, ...bgTools, ...humanTools]));
+  const allDisplayTools = Array.from(new Set([...classTools, ...effectiveBgTools, ...bgTools, ...humanTools]));
 
   // Passive Senses
   const isPerceptionProf = allProficientSkills.includes('perception');

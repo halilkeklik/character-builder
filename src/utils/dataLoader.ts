@@ -39,6 +39,62 @@ export const WARLOCK_INVOCATIONS_LVL1 = [
   { id: 'Otherworldly Leap', name: 'Otherworldly Leap', description: 'You can cast Jump on yourself at will, without expending a spell slot.' },
 ];
 
+export const ARTISAN_TOOLS = [
+  "Alchemist's Supplies",
+  "Brewer's Supplies",
+  "Calligrapher's Supplies",
+  "Carpenter's Tools",
+  "Cartographer's Tools",
+  "Cobbler's Tools",
+  "Cook's Utensils",
+  "Glassblower's Tools",
+  "Jeweler's Tools",
+  "Leatherworker's Tools",
+  "Mason's Tools",
+  "Painter's Supplies",
+  "Potter's Tools",
+  "Smith's Tools",
+  "Tinker's Tools",
+  "Weaver's Tools",
+  "Woodcarver's Tools",
+];
+
+export const MUSICAL_INSTRUMENTS = [
+  "Bagpipes",
+  "Drum",
+  "Dulcimer",
+  "Flute",
+  "Horn",
+  "Lute",
+  "Lyre",
+  "Pan Flute",
+  "Shawm",
+  "Viol",
+];
+
+export const GAMING_SETS = [
+  "Dice Set",
+  "Dragonchess Set",
+  "Playing Card Set",
+  "Three-Dragon Ante Set",
+];
+
+export const OTHER_TOOLS = [
+  "Disguise Kit",
+  "Forgery Kit",
+  "Herbalism Kit",
+  "Navigator's Tools",
+  "Poisoner's Kit",
+  "Thieves' Tools",
+];
+
+export const ALL_TOOLS = [
+  ...ARTISAN_TOOLS,
+  ...MUSICAL_INSTRUMENTS,
+  ...GAMING_SETS,
+  ...OTHER_TOOLS,
+];
+
 export interface SpeciesOption {
   id: string;
   name: string;

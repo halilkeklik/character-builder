@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { CharacterSheetState, WizardStep, AbilityKey, FeatChoiceData, ClassChoices } from './types/character';
+import type { CharacterSheetState, WizardStep, AbilityKey, FeatChoiceData, ClassChoices, BackgroundChoices } from './types/character';
 import { ALL_CLASSES, ALL_SPECIES, ALL_BACKGROUNDS, getBackgroundAllowedAbilities } from './utils/dataLoader';
 import { Navbar } from './components/Navbar';
 import { StepConcept } from './components/StepConcept';
@@ -125,12 +125,26 @@ export const App: React.FC = () => {
     }));
   };
 
-  // Background selection (also aligns default background bonuses)
+  // Background selection (also aligns default background bonuses, skills, and tools)
   const handleSelectBackground = (bg: any) => {
     const allowed = getBackgroundAllowedAbilities(bg) as AbilityKey[];
+    const defaultSkills: string[] = bg.skillProficiencies?.[0] ? Object.keys(bg.skillProficiencies[0]) : [];
+    let defaultTool = '';
+    if (bg.toolProficiencies?.[0]) {
+      const toolKey = Object.keys(bg.toolProficiencies[0])[0];
+      if (toolKey === 'anyGamingSet') defaultTool = 'Dice Set';
+      else if (toolKey === 'anyArtisansTool') defaultTool = "Alchemist's Supplies";
+      else if (toolKey === 'anyMusicalInstrument') defaultTool = 'Lute';
+      else defaultTool = toolKey;
+    }
+
     setState((prev) => ({
       ...prev,
       selectedBackground: bg,
+      backgroundChoices: {
+        skills: defaultSkills,
+        tool: defaultTool,
+      },
       backgroundFeatChoices: {},
       backgroundBonus: {
         ...prev.backgroundBonus,
@@ -138,6 +152,14 @@ export const App: React.FC = () => {
         second: allowed[1] || 'con',
         third: allowed[2] || 'dex',
       },
+    }));
+  };
+
+  // Background choices updates (skills replacements, tools)
+  const handleUpdateBackgroundChoices = (choicesPatch: Partial<BackgroundChoices>) => {
+    setState((prev) => ({
+      ...prev,
+      backgroundChoices: { ...prev.backgroundChoices, ...choicesPatch },
     }));
   };
 
@@ -289,6 +311,7 @@ export const App: React.FC = () => {
           <StepBackground
             state={state}
             onSelectBackground={handleSelectBackground}
+            onUpdateBackgroundChoices={handleUpdateBackgroundChoices}
             onUpdateBgFeatChoices={handleUpdateBgFeatChoices}
             onNext={() => setStep('abilities')}
             onBack={() => setStep('species')}
