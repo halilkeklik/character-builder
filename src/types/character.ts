@@ -64,6 +64,7 @@ export interface InventoryState {
 }
 
 export interface CharacterSheetState {
+  characterId?: string;
   concept: CharacterConcept;
   selectedClass?: any;
   selectedSubclass?: any;
@@ -102,3 +103,16 @@ export type WizardStep =
   | 'equipment' 
   | 'spells' 
   | 'sheet';
+
+export interface SavedCharacterRecord {
+  id: string;
+  name: string;
+  className: string;
+  subclassName?: string;
+  speciesName: string;
+  level: number;
+  backgroundName: string;
+  avatarUrl?: string;
+  updatedAt: number;
+  data: CharacterSheetState;
+}

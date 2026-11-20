@@ -1,7 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import type { CharacterSheetState, WizardStep, AbilityKey, FeatChoiceData, ClassChoices, BackgroundChoices, InventoryState } from './types/character';
-import { ALL_CLASSES, ALL_SPECIES, ALL_BACKGROUNDS, getBackgroundAllowedAbilities } from './utils/dataLoader';
+import type { 
+  CharacterSheetState, 
+  WizardStep, 
+  AbilityKey, 
+  FeatChoiceData, 
+  ClassChoices, 
+  BackgroundChoices, 
+  InventoryState,
+  SavedCharacterRecord
+} from './types/character';
+import { getBackgroundAllowedAbilities } from './utils/dataLoader';
+import { 
+  loadAllCharacters, 
+  getActiveCharacterId, 
+  setActiveCharacterId, 
+  saveCharacter, 
+  deleteCharacter, 
+  duplicateCharacter, 
+  createNewCharacter, 
+  exportAllCharactersJSON, 
+  importCharactersJSON,
+  DEFAULT_BLANK_STATE 
+} from './utils/characterStorage';
+import { getInitialInventory } from './utils/equipmentHelper';
 import { Navbar } from './components/Navbar';
+import { CharacterRosterModal } from './components/CharacterRosterModal';
 import { StepConcept } from './components/StepConcept';
 import { StepClass } from './components/StepClass';
 import { StepSpecies } from './components/StepSpecies';
@@ -11,66 +34,37 @@ import { StepEquipment } from './components/StepEquipment';
 import { StepSpells } from './components/StepSpells';
 import { CharacterSheet } from './components/CharacterSheet';
 
-const STORAGE_KEY = 'dnd_2024_character_builder_data';
-
-const DEFAULT_STATE: CharacterSheetState = {
-  concept: {
-    name: 'Valerius the Bold',
-    alignment: 'Neutral Good',
-    level: 1,
-    gender: 'He/Him',
-    notes: 'A veteran guardian seeking ancient relics across the forgotten realms.',
-    avatarUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=300&auto=format&fit=crop&q=80',
-  },
-  selectedClass: ALL_CLASSES[0] || undefined, // Barbarian
-  selectedSubclass: undefined,
-  selectedSpecies: ALL_SPECIES.find((s: any) => s.name === 'Human') || ALL_SPECIES[0],
-  selectedBackground: ALL_BACKGROUNDS.find((b: any) => b.name === 'Soldier') || ALL_BACKGROUNDS[0],
-  abilityScores: {
-    str: 15,
-    dex: 14,
-    con: 13,
-    int: 12,
-    wis: 10,
-    cha: 8,
-  },
-  backgroundBonus: {
-    mode: '+2/+1',
-    first: 'str',
-    second: 'con',
-  },
-  selectedSkills: ['athletics', 'survival'],
-  speciesChoices: {
-    humanSkill: 'perception',
-    humanOriginFeat: 'Skilled',
-  },
-  selectedWeaponMasteries: ['Greataxe', 'Handaxe'],
-  selectedSpells: [],
-  equipmentOption: 'A',
-};
-
 export const App: React.FC = () => {
   const [currentStep, setStep] = useState<WizardStep>('concept');
+  const [records, setRecords] = useState<SavedCharacterRecord[]>(() => loadAllCharacters());
+  const [activeId, setActiveId] = useState<string>(() => getActiveCharacterId());
+  const [isRosterOpen, setIsRosterOpen] = useState(false);
+
   const [state, setState] = useState<CharacterSheetState>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (e) {
-      // ignore
+    const initialRecords = loadAllCharacters();
+    const initialActiveId = getActiveCharacterId();
+    const activeChar = initialRecords.find(c => c.id === initialActiveId) || initialRecords[0];
+    if (activeChar) {
+      return {
+        ...activeChar.data,
+        characterId: activeChar.id,
+      };
     }
-    return DEFAULT_STATE;
+    return {
+      ...DEFAULT_BLANK_STATE,
+      characterId: initialActiveId,
+      inventory: getInitialInventory(DEFAULT_BLANK_STATE.selectedClass, DEFAULT_BLANK_STATE.selectedBackground, 'A', 'A'),
+    };
   });
 
-  // Save to LocalStorage on changes
+  // Auto-save whenever state changes
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) {
-      // ignore
+    if (state && activeId) {
+      const charId = state.characterId || activeId;
+      const { records: updatedRecords } = saveCharacter({ ...state, characterId: charId }, charId);
+      setRecords(updatedRecords);
     }
-  }, [state]);
+  }, [state, activeId]);
 
   // Concept updates
   const updateConcept = (patch: Partial<CharacterSheetState['concept']>) => {
@@ -234,43 +228,130 @@ export const App: React.FC = () => {
     }));
   };
 
-  // Reset Character
-  const handleReset = () => {
-    if (window.confirm('Reset all character choices back to default?')) {
-      setState(DEFAULT_STATE);
-      setStep('concept');
+  // --- Multi-Character Actions ---
+
+  const handleSelectCharacter = (id: string) => {
+    const target = records.find(c => c.id === id);
+    if (target) {
+      setActiveCharacterId(id);
+      setActiveId(id);
+      setState({
+        ...target.data,
+        characterId: id,
+      });
+      setIsRosterOpen(false);
     }
   };
 
-  // Export JSON
-  const handleExport = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(state, null, 2));
+  const handleCreateNew = () => {
+    const { newRecord, records: updatedRecords } = createNewCharacter();
+    setRecords(updatedRecords);
+    setActiveId(newRecord.id);
+    setState({
+      ...newRecord.data,
+      characterId: newRecord.id,
+    });
+    setStep('concept');
+    setIsRosterOpen(false);
+  };
+
+  const handleDuplicate = (id: string) => {
+    const { newRecord, records: updatedRecords } = duplicateCharacter(id);
+    setRecords(updatedRecords);
+    setActiveId(newRecord.id);
+    setState({
+      ...newRecord.data,
+      characterId: newRecord.id,
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    const { activeId: nextActiveId, records: updatedRecords } = deleteCharacter(id);
+    setRecords(updatedRecords);
+    if (id === activeId) {
+      setActiveId(nextActiveId);
+      const nextChar = updatedRecords.find(c => c.id === nextActiveId) || updatedRecords[0];
+      if (nextChar) {
+        setState({
+          ...nextChar.data,
+          characterId: nextChar.id,
+        });
+      }
+    }
+  };
+
+  const handleExportSingle = (record: SavedCharacterRecord) => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(record.data, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `${state.concept.name.replace(/\s+/g, '_') || 'character'}_2024.json`);
+    downloadAnchor.setAttribute('download', `${record.name.replace(/\s+/g, '_') || 'character'}_2024.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
   };
 
-  // Import JSON
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExportCurrent = () => {
+    const charName = state.concept?.name?.trim() || 'character';
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(state, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `${charName.replace(/\s+/g, '_')}_2024.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleExportAll = () => {
+    const jsonStr = exportAllCharactersJSON();
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(jsonStr);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `dnd_2024_roster_backup_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileReader = new FileReader();
     if (e.target.files && e.target.files[0]) {
       fileReader.readAsText(e.target.files[0], 'UTF-8');
       fileReader.onload = (event) => {
         try {
-          const parsed = JSON.parse(event.target?.result as string);
-          if (parsed.abilityScores && parsed.concept) {
-            setState(parsed);
+          const text = event.target?.result as string;
+          const { activeId: importedActiveId, records: nextRecords } = importCharactersJSON(text);
+          setRecords(nextRecords);
+          setActiveId(importedActiveId);
+          const importedChar = nextRecords.find(c => c.id === importedActiveId);
+          if (importedChar) {
+            setState({
+              ...importedChar.data,
+              characterId: importedChar.id,
+            });
             setStep('sheet');
-          } else {
-            alert('Invalid character JSON file format.');
           }
-        } catch (err) {
-          alert('Failed to read character JSON.');
+          setIsRosterOpen(false);
+        } catch (err: any) {
+          alert(err?.message || 'Failed to import character JSON.');
         }
       };
+    }
+  };
+
+  // Reset Character choices (retaining current character ID)
+  const handleReset = () => {
+    if (window.confirm('Reset this character’s choices back to default?')) {
+      const resetData: CharacterSheetState = {
+        ...DEFAULT_BLANK_STATE,
+        characterId: activeId,
+        concept: {
+          ...DEFAULT_BLANK_STATE.concept,
+          name: state.concept.name || 'New Hero',
+        },
+        inventory: getInitialInventory(DEFAULT_BLANK_STATE.selectedClass, DEFAULT_BLANK_STATE.selectedBackground, 'A', 'A'),
+      };
+      setState(resetData);
+      setStep('concept');
     }
   };
 
@@ -279,9 +360,29 @@ export const App: React.FC = () => {
       <Navbar
         currentStep={currentStep}
         setStep={setStep}
+        activeCharacterName={state.concept?.name}
+        activeCharacterClass={state.selectedClass?.name}
+        activeCharacterLevel={state.concept?.level || 1}
+        totalCharactersCount={records.length}
+        onOpenRoster={() => setIsRosterOpen(true)}
+        onNewCharacter={handleCreateNew}
         onReset={handleReset}
-        onExport={handleExport}
-        onImport={handleImport}
+        onExport={handleExportCurrent}
+        onImport={handleImportJSON}
+      />
+
+      <CharacterRosterModal
+        isOpen={isRosterOpen}
+        onClose={() => setIsRosterOpen(false)}
+        records={records}
+        activeId={activeId}
+        onSelectCharacter={handleSelectCharacter}
+        onCreateNew={handleCreateNew}
+        onDuplicate={handleDuplicate}
+        onDelete={handleDelete}
+        onExportSingle={handleExportSingle}
+        onExportAll={handleExportAll}
+        onImportJSON={handleImportJSON}
       />
 
       <main className="flex-1 px-4 sm:px-6 lg:px-8">
@@ -360,7 +461,7 @@ export const App: React.FC = () => {
           <CharacterSheet
             state={state}
             onEditStep={(st) => setStep(st)}
-            onExport={handleExport}
+            onExport={handleExportCurrent}
           />
         )}
       </main>
