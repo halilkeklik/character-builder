@@ -27,6 +27,12 @@ export const StepSpecies: React.FC<StepSpeciesProps> = ({
   const choices = state.speciesChoices || {};
   const level = state.concept.level || 1;
 
+  // Track skills already proficient to prevent duplicate selection
+  const classSkills = state.selectedSkills.map(s => s.toLowerCase());
+  const humanSkilledFeatSkills = (choices.humanFeatChoices?.skills || []).map(s => s.toLowerCase());
+  const disabledForHumanSkill = [...classSkills, ...humanSkilledFeatSkills];
+  const disabledForFeatCustomizer = [...classSkills, ...(choices.humanSkill ? [choices.humanSkill.toLowerCase()] : [])];
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 py-6">
       <div className="border-b border-slate-800 pb-4">
@@ -153,11 +159,14 @@ export const StepSpecies: React.FC<StepSpeciesProps> = ({
                     className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 capitalize font-semibold focus:border-amber-500"
                   >
                     <option value="">Select an Extra Skill</option>
-                    {Object.keys(SKILL_ABILITY_MAP).map((skill) => (
-                      <option key={skill} value={skill}>
-                        {skill} ({SKILL_ABILITY_MAP[skill].toUpperCase()})
-                      </option>
-                    ))}
+                    {Object.keys(SKILL_ABILITY_MAP).map((skill) => {
+                      const isAlreadyKnown = disabledForHumanSkill.includes(skill.toLowerCase());
+                      return (
+                        <option key={skill} value={skill} disabled={isAlreadyKnown}>
+                          {skill} ({SKILL_ABILITY_MAP[skill].toUpperCase()}) {isAlreadyKnown ? '— (Already Known)' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -191,6 +200,7 @@ export const StepSpecies: React.FC<StepSpeciesProps> = ({
                   data={choices.humanFeatChoices || {}}
                   onChange={(updated) => onUpdateSpeciesChoices({ humanFeatChoices: updated })}
                   titlePrefix="Human Versatile Feat"
+                  disabledSkills={disabledForFeatCustomizer}
                 />
               )}
             </div>

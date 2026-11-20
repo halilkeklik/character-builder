@@ -42,6 +42,7 @@ interface FeatCustomizerProps {
   data: FeatChoiceData;
   onChange: (updated: FeatChoiceData) => void;
   titlePrefix?: string;
+  disabledSkills?: string[];
 }
 
 export const FeatCustomizer: React.FC<FeatCustomizerProps> = ({
@@ -49,13 +50,16 @@ export const FeatCustomizer: React.FC<FeatCustomizerProps> = ({
   data,
   onChange,
   titlePrefix = 'Feat Customization',
+  disabledSkills = [],
 }) => {
   const cleanName = (featName || '').split(';')[0].split('|')[0].trim().toLowerCase();
+  const normalizedDisabled = disabledSkills.map(s => s.toLowerCase());
 
   // 1. SKILLED FEAT (Choose 3 skills)
   if (cleanName === 'skilled') {
     const selectedSkills = data.skills || [];
     const handleToggleSkill = (skill: string) => {
+      if (normalizedDisabled.includes(skill.toLowerCase())) return;
       const exists = selectedSkills.includes(skill);
       let next: string[];
       if (exists) {
@@ -79,30 +83,36 @@ export const FeatCustomizer: React.FC<FeatCustomizerProps> = ({
           </span>
         </div>
         <p className="text-[11px] text-slate-400">
-          The Skilled feat grants proficiency in any three skills of your choice.
+          The Skilled feat grants proficiency in any three skills of your choice (already proficient skills cannot be selected).
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {Object.keys(SKILL_ABILITY_MAP).map((skill) => {
+            const isAlreadyProf = normalizedDisabled.includes(skill.toLowerCase());
             const isChecked = selectedSkills.includes(skill);
             const isFull = selectedSkills.length >= 3 && !isChecked;
+            const isDisabled = isAlreadyProf || isFull;
 
             return (
               <button
                 key={skill}
                 type="button"
-                disabled={isFull}
+                disabled={isDisabled}
                 onClick={() => handleToggleSkill(skill)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold capitalize border transition flex items-center justify-between cursor-pointer ${
+                title={isAlreadyProf ? 'Already proficient from another feature' : undefined}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold capitalize border transition flex items-center justify-between ${
                   isChecked
                     ? 'bg-amber-600/30 border-amber-500 text-amber-100 font-bold'
+                    : isAlreadyProf
+                    ? 'bg-slate-950/60 border-slate-900 text-slate-500 cursor-not-allowed opacity-50'
                     : isFull
                     ? 'bg-slate-950/40 border-slate-850 text-slate-600 cursor-not-allowed'
-                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700 cursor-pointer'
                 }`}
               >
-                <span>{skill}</span>
-                {isChecked && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                <span className="truncate">{skill}</span>
+                {isChecked && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-1" />}
+                {isAlreadyProf && <span className="text-[9px] text-slate-500 font-normal shrink-0 ml-1">(Known)</span>}
               </button>
             );
           })}

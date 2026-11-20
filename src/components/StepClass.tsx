@@ -47,6 +47,17 @@ export const StepClass: React.FC<StepClassProps> = ({
   // Selected skills that belong to the class options
   const selectedClassSkills = state.selectedSkills.filter(s => allowedSkills.includes(s));
 
+  // Skills already proficient from background, species, or feats
+  const bgSkills = state.selectedBackground?.skillProficiencies?.[0]
+    ? Object.keys(state.selectedBackground.skillProficiencies[0]).map(s => s.toLowerCase())
+    : [];
+  const humanSkill = state.speciesChoices?.humanSkill ? [state.speciesChoices.humanSkill.toLowerCase()] : [];
+  const skilledSkills = [
+    ...(state.speciesChoices?.humanFeatChoices?.skills || []),
+    ...(state.backgroundFeatChoices?.skills || [])
+  ].map(s => s.toLowerCase());
+  const alreadyKnownOutsideClass = [...bgSkills, ...humanSkill, ...skilledSkills];
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 py-6">
       <div className="border-b border-slate-800 pb-4">
@@ -252,25 +263,31 @@ export const StepClass: React.FC<StepClassProps> = ({
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                 {allowedSkills.map((sk) => {
+                  const isKnownOutside = alreadyKnownOutsideClass.includes(sk.toLowerCase());
                   const isChecked = state.selectedSkills.includes(sk);
                   const isFull = selectedClassSkills.length >= maxSkillsAllowed && !isChecked;
+                  const isDisabled = isFull || isKnownOutside;
 
                   return (
                     <button
                       key={sk}
                       type="button"
-                      disabled={isFull}
-                      onClick={() => onToggleSkill(sk)}
+                      disabled={isDisabled}
+                      onClick={() => !isKnownOutside && onToggleSkill(sk)}
+                      title={isKnownOutside ? 'Already proficient from background or species' : undefined}
                       className={`px-3 py-2 rounded-lg text-xs font-medium capitalize border transition flex items-center justify-between ${
                         isChecked
                           ? 'bg-amber-600/30 border-amber-500 text-amber-100 font-bold'
+                          : isKnownOutside
+                          ? 'bg-slate-950/60 border-slate-900 text-slate-500 cursor-not-allowed opacity-50'
                           : isFull
                           ? 'bg-slate-950/40 border-slate-850 text-slate-600 cursor-not-allowed'
-                          : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                          : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700 cursor-pointer'
                       }`}
                     >
-                      <span>{sk}</span>
-                      {isChecked && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                      <span className="truncate">{sk}</span>
+                      {isChecked && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-1" />}
+                      {isKnownOutside && <span className="text-[9px] text-slate-500 font-normal shrink-0 ml-1">(Known)</span>}
                     </button>
                   );
                 })}

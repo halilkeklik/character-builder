@@ -24,6 +24,15 @@ export const StepBackground: React.FC<StepBackgroundProps> = ({
   const featRaw = selectedBg?.feats?.[0] ? Object.keys(selectedBg.feats[0])[0] : '';
   const featName = featRaw.split(';')[0].split('|')[0];
 
+  // Disable skills that are already proficient from other features
+  const classSkills = state.selectedSkills.map(s => s.toLowerCase());
+  const bgFixedSkills = selectedBg?.skillProficiencies?.[0]
+    ? Object.keys(selectedBg.skillProficiencies[0]).map(s => s.toLowerCase())
+    : [];
+  const humanSkill = state.speciesChoices?.humanSkill ? [state.speciesChoices.humanSkill.toLowerCase()] : [];
+  const humanSkilledFeat = (state.speciesChoices?.humanFeatChoices?.skills || []).map(s => s.toLowerCase());
+  const disabledForBgFeat = [...classSkills, ...bgFixedSkills, ...humanSkill, ...humanSkilledFeat];
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 py-6">
       <div className="border-b border-slate-800 pb-4">
@@ -159,6 +168,7 @@ export const StepBackground: React.FC<StepBackgroundProps> = ({
               data={state.backgroundFeatChoices || {}}
               onChange={onUpdateBgFeatChoices}
               titlePrefix="Background Origin Feat"
+              disabledSkills={disabledForBgFeat}
             />
           )}
         </div>
