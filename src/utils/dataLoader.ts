@@ -209,3 +209,82 @@ export function getWeaponMasteriesForClass(className: string): number {
     default: return 0;
   }
 }
+
+export function getSpellByName(name: string): any | undefined {
+  if (!name) return undefined;
+  const clean = name.split('|')[0].trim().toLowerCase();
+  return ALL_SPELLS.find(s => s.name.toLowerCase() === clean);
+}
+
+export function getItemByName(name: string): any | undefined {
+  if (!name) return undefined;
+  const clean = name.split('|')[0].trim().toLowerCase();
+  return ALL_ITEMS.find(it => it.name.toLowerCase() === clean);
+}
+
+export function getMasteryByName(name: string): any | undefined {
+  if (!name) return undefined;
+  const clean = name.split('|')[0].trim().toLowerCase();
+  return ALL_MASTERIES.find(m => m.name.toLowerCase() === clean);
+}
+
+export const SPELL_SCHOOLS: Record<string, string> = {
+  A: 'Abjuration',
+  C: 'Conjuration',
+  D: 'Divination',
+  E: 'Enchantment',
+  V: 'Evocation',
+  I: 'Illusion',
+  N: 'Necromancy',
+  T: 'Transmutation',
+};
+
+export function formatSpellTime(time: any, isRitual?: boolean): string {
+  if (!time) return '1 Action';
+  const t = Array.isArray(time) ? time[0] : time;
+  const num = t?.number || 1;
+  const unit = t?.unit || 'action';
+  let res = `${num} ${unit.charAt(0).toUpperCase() + unit.slice(1)}`;
+  if (isRitual) res += ' (Ritual)';
+  return res;
+}
+
+export function formatSpellRange(range: any): string {
+  if (!range) return 'Self';
+  if (typeof range === 'string') return range;
+  const dist = range.distance;
+  if (!dist) return range.type ? range.type.charAt(0).toUpperCase() + range.type.slice(1) : 'Self';
+  if (typeof dist === 'string') return dist.charAt(0).toUpperCase() + dist.slice(1);
+  if (dist.type === 'touch' || dist.type === 'self') return dist.type.charAt(0).toUpperCase() + dist.type.slice(1);
+  if (dist.amount) return `${dist.amount} ${dist.type || 'ft'}`;
+  return dist.type ? dist.type.charAt(0).toUpperCase() + dist.type.slice(1) : 'Self';
+}
+
+export function formatSpellDuration(duration: any): string {
+  if (!duration) return 'Instantaneous';
+  const d = Array.isArray(duration) ? duration[0] : duration;
+  if (d?.type === 'instant') return 'Instantaneous';
+  if (d?.type === 'timed' && d?.duration) {
+    const amt = d.duration.amount || 1;
+    const unit = d.duration.type || 'minute';
+    const text = `${amt} ${unit}${amt > 1 ? 's' : ''}`;
+    return d.concentration ? `${text} (Conc.)` : text;
+  }
+  if (d?.type === 'permanent') return 'Until Dispelled';
+  return d?.type ? d.type.charAt(0).toUpperCase() + d.type.slice(1) : 'Instantaneous';
+}
+
+export function formatSpellComponents(components: any): string {
+  if (!components) return 'V, S';
+  const parts: string[] = [];
+  if (components.v) parts.push('V');
+  if (components.s) parts.push('S');
+  if (components.m) {
+    if (typeof components.m === 'string') {
+      parts.push(`M (${components.m})`);
+    } else {
+      parts.push('M');
+    }
+  }
+  return parts.join(', ') || 'None';
+}
