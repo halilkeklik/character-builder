@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { CharacterSheetState, WizardStep, AbilityKey, FeatChoiceData, ClassChoices, BackgroundChoices } from './types/character';
+import type { CharacterSheetState, WizardStep, AbilityKey, FeatChoiceData, ClassChoices, BackgroundChoices, InventoryState } from './types/character';
 import { ALL_CLASSES, ALL_SPECIES, ALL_BACKGROUNDS, getBackgroundAllowedAbilities } from './utils/dataLoader';
 import { Navbar } from './components/Navbar';
 import { StepConcept } from './components/StepConcept';
@@ -226,6 +226,14 @@ export const App: React.FC = () => {
     });
   };
 
+  // Inventory updates
+  const handleUpdateInventory = (invPatch: Partial<InventoryState>) => {
+    setState((prev) => ({
+      ...prev,
+      inventory: prev.inventory ? { ...prev.inventory, ...invPatch } : (invPatch as InventoryState),
+    }));
+  };
+
   // Reset Character
   const handleReset = () => {
     if (window.confirm('Reset all character choices back to default?')) {
@@ -332,6 +340,7 @@ export const App: React.FC = () => {
           <StepEquipment
             state={state}
             onSelectOption={(opt) => setState((p) => ({ ...p, equipmentOption: opt }))}
+            onUpdateInventory={handleUpdateInventory}
             onToggleMastery={handleToggleMastery}
             onNext={() => setStep('spells')}
             onBack={() => setStep('abilities')}

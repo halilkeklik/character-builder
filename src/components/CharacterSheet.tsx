@@ -7,7 +7,6 @@ import {
   formatModifier, 
   getProficiencyBonus, 
   calculateHP, 
-  calculateAC, 
   SKILL_ABILITY_MAP 
 } from '../utils/dndRules';
 import { 
@@ -23,6 +22,7 @@ import {
   FIGHTING_STYLES, 
   WARLOCK_INVOCATIONS_LVL1 
 } from '../utils/dataLoader';
+import { calculateEquippedAC } from '../utils/equipmentHelper';
 import { extractEntriesText } from '../utils/tagParser';
 import confetti from 'canvas-confetti';
 import { 
@@ -47,7 +47,10 @@ import {
   Crosshair,
   Clock,
   Target,
-  Layers
+  Layers,
+  Coins,
+  Package,
+  ShieldCheck
 } from 'lucide-react';
 
 interface CharacterSheetProps {
@@ -74,7 +77,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
   onEditStep,
   onExport,
 }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'combat' | 'spells' | 'features'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'combat' | 'spells' | 'inventory' | 'features'>('all');
   const [expandedSpells, setExpandedSpells] = useState<Record<string, boolean>>({});
   const [expandedMasteries, setExpandedMasteries] = useState<Record<string, boolean>>({});
   const [spellSearch, setSpellSearch] = useState('');
@@ -130,14 +133,18 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
   const isTough = featName.toLowerCase() === 'tough' || humanOriginFeatName?.toLowerCase() === 'tough';
 
   const fightingStyle = state.classChoices?.fightingStyle;
-  const isDefenseStyle = fightingStyle === 'Defense';
   const hasArmorOfShadows = state.classChoices?.eldritchInvocation === 'Armor of Shadows';
   
-  let baseAC = calculateAC(dexMod, conMod, wisMod, className);
-  if (hasArmorOfShadows) {
-    baseAC = Math.max(baseAC, 13 + dexMod);
-  }
-  const ac = baseAC + (isDefenseStyle ? 1 : 0);
+  const acCalculation = calculateEquippedAC(
+    dexMod,
+    conMod,
+    wisMod,
+    className,
+    state.inventory?.items || [],
+    fightingStyle,
+    hasArmorOfShadows
+  );
+  const ac = acCalculation.totalAC;
 
   const baseHP = calculateHP(level, hitDieFaces, conMod, isTough);
   const maxHP = baseHP + (isDwarf ? level : 0);
@@ -500,6 +507,16 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
               }`}
             >
               <Award className="w-3.5 h-3.5" /> Features & Lore
+            </button>
+            <button
+              onClick={() => setActiveTab('inventory')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'inventory'
+                  ? 'bg-amber-600 text-slate-950 font-bold shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" /> Inventory & Wealth ({state.inventory?.items?.length || 0})
             </button>
           </div>
 
@@ -1056,6 +1073,91 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
                     ))}
                   </div>
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 5. INVENTORY & EQUIPMENT SECTION */}
+        {(activeTab === 'all' || activeTab === 'inventory') && (
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-4 print:bg-slate-50 print:border-slate-300">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                  <Package className="w-4 h-4 text-amber-500" />
+                  Equipment, Inventory & Coin Purse
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Carried adventuring gear, equipped armor, weapons, and wealth.
+                </p>
+              </div>
+
+              {/* Coin Purse Badges */}
+              <div className="flex items-center gap-2 text-xs font-bold font-mono">
+                <span className="px-3 py-1 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5 text-amber-400" />
+                  {state.inventory?.currency?.gp ?? 15} GP
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+                  {state.inventory?.currency?.sp ?? 0} SP
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-amber-700">
+                  {state.inventory?.currency?.cp ?? 0} CP
+                </span>
+              </div>
+            </div>
+
+            {/* Equipped Armor & Shield Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Active Armor</span>
+                <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-blue-400" />
+                  {acCalculation.armorName}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Shield</span>
+                <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  {acCalculation.hasShield ? 'Shield (+2 AC Equipped)' : 'None Equipped'}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Total AC Breakdown</span>
+                <span className="text-xs font-mono font-bold text-amber-300">
+                  Base: {acCalculation.baseAC} {acCalculation.hasShield && '+ Shield (2)'} {acCalculation.defenseBonus > 0 && '+ Defense (1)'} = {acCalculation.totalAC} AC
+                </span>
+              </div>
+            </div>
+
+            {/* Items Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pt-2">
+              {(state.inventory?.items && state.inventory.items.length > 0) ? (
+                state.inventory.items.map((it) => (
+                  <div
+                    key={it.id}
+                    className={`p-2.5 rounded-lg border text-xs flex items-center justify-between gap-2 ${
+                      it.equipped
+                        ? 'bg-amber-950/20 border-amber-500/50 text-amber-100'
+                        : 'bg-slate-950 border-slate-800 text-slate-300'
+                    }`}
+                  >
+                    <div className="truncate">
+                      <span className="font-semibold block truncate">{it.name}</span>
+                      <span className="text-[10px] text-slate-500 capitalize">
+                        {it.category} {it.equipped && '• Equipped'}
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 font-mono text-[11px] font-bold shrink-0">
+                      x{it.quantity}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-slate-500 italic py-2 col-span-full">No equipment recorded yet. Visit the Equipment step to configure starting packages.</p>
               )}
             </div>
           </div>

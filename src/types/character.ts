@@ -43,6 +43,26 @@ export interface BackgroundChoices {
   tool?: string;
 }
 
+export interface EquipmentItem {
+  id: string;
+  name: string;
+  quantity: number;
+  category: 'armor' | 'shield' | 'weapon' | 'ammunition' | 'gear' | 'tool' | 'pack';
+  equipped?: boolean;
+  cost?: string;
+}
+
+export interface InventoryState {
+  classPackage: string; // 'A' | 'B' | 'C'
+  backgroundPackage: string; // 'A' | 'B'
+  items: EquipmentItem[];
+  currency: {
+    gp: number;
+    sp: number;
+    cp: number;
+  };
+}
+
 export interface CharacterSheetState {
   concept: CharacterConcept;
   selectedClass?: any;
@@ -70,6 +90,7 @@ export interface CharacterSheetState {
   selectedWeaponMasteries: string[];
   selectedSpells: string[];
   equipmentOption: 'A' | 'B';
+  inventory?: InventoryState;
 }
 
 export type WizardStep = 
