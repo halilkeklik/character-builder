@@ -15,6 +15,30 @@ export const ALL_ITEMS = (itemsData as any).items as any[];
 export const ALL_MASTERIES = (itemsData as any).masteries as any[];
 export const ORIGIN_FEATS = ALL_FEATS.filter(f => f.category === 'O');
 
+export const FIGHTING_STYLES = [
+  { id: 'Archery', name: 'Archery', description: '+2 bonus to attack rolls you make with ranged weapons.' },
+  { id: 'Blind Fighting', name: 'Blind Fighting', description: 'You have Blindsight with a range of 10 feet.' },
+  { id: 'Defense', name: 'Defense', description: 'While you are wearing armor, you gain a +1 bonus to Armor Class.' },
+  { id: 'Dueling', name: 'Dueling', description: 'When wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon.' },
+  { id: 'Great Weapon Fighting', name: 'Great Weapon Fighting', description: 'When you roll a 1 or 2 on a damage die for an attack with a two-handed melee weapon, you can reroll the die.' },
+  { id: 'Interception', name: 'Interception', description: 'When a creature within 5 ft of you hits a target, you can use your reaction to reduce the damage by 1d10 + PB.' },
+  { id: 'Protection', name: 'Protection', description: 'When a creature within 5 ft of you attacks a target, you can use your reaction to impose disadvantage on the attack roll.' },
+  { id: 'Two-Weapon Fighting', name: 'Two-Weapon Fighting', description: 'When making an extra attack with a light weapon in your off-hand, add your ability modifier to the damage roll.' },
+  { id: 'Unarmed Fighting', name: 'Unarmed Fighting', description: 'Your unarmed strikes deal 1d6 + Str mod damage (or 1d8 if not wielding any weapons or shield).' },
+  { id: 'Thrown Weapon Fighting', name: 'Thrown Weapon Fighting', description: 'You can draw a weapon with the thrown property as part of the attack and gain +2 to damage rolls.' },
+];
+
+export const WARLOCK_INVOCATIONS_LVL1 = [
+  { id: 'Pact of the Blade', name: 'Pact of the Blade', description: 'Bonus action to conjure a pact melee weapon or bond with one. Use Charisma for attack and damage rolls, and damage type can be Necrotic, Radiant, or Psychic.' },
+  { id: 'Pact of the Tome', name: 'Pact of the Tome', description: 'Conjure a Book of Shadows. You gain 3 cantrips from any class list and 2 ritual 1st-level spells of your choice.' },
+  { id: 'Pact of the Chain', name: 'Pact of the Chain', description: 'Learn the Find Familiar spell as a ritual. Summon special familiars (Imp, Quasit, Pseudodragon, Sprite, Skeleton, Venomous Snake, Sphinx of Wonder).' },
+  { id: 'Armor of Shadows', name: 'Armor of Shadows', description: 'Cast Mage Armor on yourself at will without expending a spell slot or material components.' },
+  { id: 'Eldritch Mind', name: 'Eldritch Mind', description: 'You have Advantage on Constitution saving throws that you make to maintain Concentration on a spell.' },
+  { id: 'Fiendish Vigor', name: 'Fiendish Vigor', description: 'Cast False Life on yourself at will as a 1st-level spell without expending a spell slot.' },
+  { id: "Devil's Sight", name: "Devil's Sight", description: 'You can see normally in darkness, both magical and nonmagical, to a distance of 120 feet.' },
+  { id: 'Otherworldly Leap', name: 'Otherworldly Leap', description: 'You can cast Jump on yourself at will, without expending a spell slot.' },
+];
+
 export interface SpeciesOption {
   id: string;
   name: string;

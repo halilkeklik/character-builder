@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { CharacterSheetState, WizardStep, AbilityKey, FeatChoiceData } from './types/character';
+import type { CharacterSheetState, WizardStep, AbilityKey, FeatChoiceData, ClassChoices } from './types/character';
 import { ALL_CLASSES, ALL_SPECIES, ALL_BACKGROUNDS, getBackgroundAllowedAbilities } from './utils/dataLoader';
 import { Navbar } from './components/Navbar';
 import { StepConcept } from './components/StepConcept';
@@ -86,8 +86,17 @@ export const App: React.FC = () => {
       ...prev,
       selectedClass: cls,
       selectedSubclass: undefined,
+      classChoices: {},
       selectedSkills: [],
       selectedWeaponMasteries: [],
+    }));
+  };
+
+  // Class choices updates
+  const handleUpdateClassChoices = (choicesPatch: Partial<ClassChoices>) => {
+    setState((prev) => ({
+      ...prev,
+      classChoices: { ...prev.classChoices, ...choicesPatch },
     }));
   };
 
@@ -260,6 +269,7 @@ export const App: React.FC = () => {
             onSelectClass={handleSelectClass}
             onSelectSubclass={handleSelectSubclass}
             onToggleSkill={handleToggleSkill}
+            onUpdateClassChoices={handleUpdateClassChoices}
             onNext={() => setStep('species')}
             onBack={() => setStep('concept')}
           />

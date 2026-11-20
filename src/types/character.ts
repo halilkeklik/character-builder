@@ -27,10 +27,22 @@ export interface FeatChoiceData {
   tools?: string[];
 }
 
+export interface ClassChoices {
+  fightingStyle?: string;
+  divineOrder?: 'Protector' | 'Thaumaturge';
+  primalOrder?: 'Magician' | 'Warden';
+  expertise?: string[];
+  eldritchInvocation?: string;
+  instruments?: string[];
+  artisanTool?: string;
+  monkTool?: string;
+}
+
 export interface CharacterSheetState {
   concept: CharacterConcept;
   selectedClass?: any;
   selectedSubclass?: any;
+  classChoices?: ClassChoices;
   selectedSpecies?: any;
   selectedBackground?: any;
   abilityScores: AbilityScores;

@@ -10,7 +10,7 @@ import {
   calculateAC, 
   SKILL_ABILITY_MAP 
 } from '../utils/dndRules';
-import { getFeatByName } from '../utils/dataLoader';
+import { getFeatByName, FIGHTING_STYLES, WARLOCK_INVOCATIONS_LVL1 } from '../utils/dataLoader';
 import { extractEntriesText } from '../utils/tagParser';
 import confetti from 'canvas-confetti';
 import { 
@@ -23,7 +23,11 @@ import {
   Sword, 
   Printer, 
   Download, 
-  Edit3 
+  Edit3,
+  Award,
+  Wand2,
+  Flame,
+  Wrench
 } from 'lucide-react';
 
 interface CharacterSheetProps {
@@ -88,9 +92,18 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
   const featName = featRaw.split(';')[0].split('|')[0];
   const isTough = featName.toLowerCase() === 'tough' || humanOriginFeatName?.toLowerCase() === 'tough';
 
+  const fightingStyle = state.classChoices?.fightingStyle;
+  const isDefenseStyle = fightingStyle === 'Defense';
+  const hasArmorOfShadows = state.classChoices?.eldritchInvocation === 'Armor of Shadows';
+  
+  let baseAC = calculateAC(dexMod, conMod, wisMod, className);
+  if (hasArmorOfShadows) {
+    baseAC = Math.max(baseAC, 13 + dexMod);
+  }
+  const ac = baseAC + (isDefenseStyle ? 1 : 0);
+
   const baseHP = calculateHP(level, hitDieFaces, conMod, isTough);
   const maxHP = baseHP + (isDwarf ? level : 0);
-  const ac = calculateAC(dexMod, conMod, wisMod, className);
   
   const baseSpeed = typeof state.selectedSpecies?.speed === 'object' ? state.selectedSpecies.speed.walk : state.selectedSpecies?.speed || 30;
   const speed = isWoodElf ? 35 : baseSpeed;
@@ -130,10 +143,27 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
     ...humanInitiateSpells
   ]));
 
-  // Extra Tools (from Crafter or Musician)
+  // Tools & Instruments (from Class, Background, and Feats)
   const bgTools = state.backgroundFeatChoices?.tools || [];
   const humanTools = state.speciesChoices?.humanFeatChoices?.tools || [];
-  const allExtraTools = Array.from(new Set([...bgTools, ...humanTools]));
+  const classTools: string[] = [];
+  if (className === 'Artificer') {
+    classTools.push("Thieves' Tools", "Tinker's Tools");
+    if (state.classChoices?.artisanTool) classTools.push(state.classChoices.artisanTool);
+  }
+  if (className === 'Rogue') classTools.push("Thieves' Tools");
+  if (className === 'Druid') classTools.push("Herbalism Kit");
+  if (className === 'Bard' && state.classChoices?.instruments) {
+    classTools.push(...state.classChoices.instruments);
+  }
+  if (className === 'Monk' && state.classChoices?.monkTool) {
+    classTools.push(state.classChoices.monkTool);
+  }
+  const bgFixedTools = state.selectedBackground?.toolProficiencies?.[0]
+    ? Object.keys(state.selectedBackground.toolProficiencies[0]).filter(t => !t.startsWith('any'))
+    : [];
+
+  const allDisplayTools = Array.from(new Set([...classTools, ...bgFixedTools, ...bgTools, ...humanTools]));
 
   // Passive Senses
   const isPerceptionProf = allProficientSkills.includes('perception');
@@ -304,25 +334,37 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
             <div className="space-y-1.5 max-h-[460px] overflow-y-auto pr-1">
               {Object.entries(SKILL_ABILITY_MAP).map(([skill, statKey]) => {
                 const isProf = allProficientSkills.includes(skill);
+                const isExpertise = (state.classChoices?.expertise || []).map(s => s.toLowerCase()).includes(skill);
                 const statMod = mods[statKey];
-                const totalSkillMod = statMod + (isProf ? profBonus : 0);
+                const totalSkillMod = statMod + (isExpertise ? profBonus * 2 : (isProf ? profBonus : 0));
 
                 return (
                   <div
                     key={skill}
                     className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition ${
-                      isProf
+                      isExpertise
+                        ? 'bg-amber-900/40 border border-amber-500/60 text-amber-100 font-bold print:bg-amber-200 print:text-amber-950'
+                        : isProf
                         ? 'bg-amber-950/30 border border-amber-900/40 text-amber-200 font-semibold print:bg-amber-100 print:text-amber-950'
                         : 'text-slate-400 hover:bg-slate-900/40'
                     }`}
                   >
                     <div className="flex items-center gap-2 capitalize">
                       <span className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[10px] font-bold border ${
-                        isProf ? 'bg-amber-500 border-amber-400 text-slate-950' : 'border-slate-700 text-transparent'
+                        isExpertise
+                          ? 'bg-amber-400 border-amber-300 text-slate-950'
+                          : isProf
+                          ? 'bg-amber-500 border-amber-400 text-slate-950'
+                          : 'border-slate-700 text-transparent'
                       }`}>
-                        ✓
+                        {isExpertise ? '★' : isProf ? '✓' : ''}
                       </span>
                       <span>{skill}</span>
+                      {isExpertise && (
+                        <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          Expertise
+                        </span>
+                      )}
                       <span className="text-[10px] text-slate-500 font-normal uppercase">({statKey})</span>
                     </div>
                     <span className="font-mono font-bold">{formatModifier(totalSkillMod)}</span>
@@ -354,6 +396,58 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
                 <p className="text-xs text-slate-500">No active weapon masteries at this level.</p>
               )}
             </div>
+
+            {/* Fighter Fighting Style */}
+            {fightingStyle && (
+              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 print:bg-slate-50 print:border-slate-300">
+                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Sword className="w-3.5 h-3.5" /> Fighting Style: {fightingStyle}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed mt-1">
+                  {FIGHTING_STYLES.find(f => f.name === fightingStyle)?.description || 'Martial combat technique.'}
+                </p>
+              </div>
+            )}
+
+            {/* Cleric Divine Order */}
+            {state.classChoices?.divineOrder && (
+              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 print:bg-slate-50 print:border-slate-300">
+                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5" /> Divine Order: {state.classChoices.divineOrder}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed mt-1">
+                  {state.classChoices.divineOrder === 'Protector'
+                    ? 'Trained for martial combat. You gain proficiency with Martial weapons and Heavy armor.'
+                    : 'Attuned to sacred lore. You gain one extra Cleric cantrip and add your Wisdom modifier to Arcana and Religion checks.'}
+                </p>
+              </div>
+            )}
+
+            {/* Druid Primal Order */}
+            {state.classChoices?.primalOrder && (
+              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 print:bg-slate-50 print:border-slate-300">
+                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5" /> Primal Order: {state.classChoices.primalOrder}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed mt-1">
+                  {state.classChoices.primalOrder === 'Magician'
+                    ? 'Deeply attuned to nature magic. You gain one extra Druid cantrip and add your Wisdom modifier to Arcana and Nature checks.'
+                    : 'Guardian of the wilds. You gain proficiency with Martial weapons and Medium armor.'}
+                </p>
+              </div>
+            )}
+
+            {/* Warlock Eldritch Invocation */}
+            {state.classChoices?.eldritchInvocation && (
+              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 print:bg-slate-50 print:border-slate-300">
+                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Wand2 className="w-3.5 h-3.5" /> Eldritch Invocation: {state.classChoices.eldritchInvocation}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed mt-1">
+                  {WARLOCK_INVOCATIONS_LVL1.find(i => i.name === state.classChoices?.eldritchInvocation)?.description || 'Forbidden knowledge granting supernatural power.'}
+                </p>
+              </div>
+            )}
 
             {/* Species Lineage & Ancestry Feature */}
             {lineageName && (
@@ -424,15 +518,15 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
               </div>
             )}
 
-            {/* Extra Tools from Feats */}
-            {allExtraTools.length > 0 && (
+            {/* Tool & Instrument Proficiencies */}
+            {allDisplayTools.length > 0 && (
               <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 print:bg-slate-50 print:border-slate-300">
-                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
-                  Tool Proficiencies (from Feats)
+                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Wrench className="w-3.5 h-3.5" /> Tool & Instrument Proficiencies
                 </h3>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {allExtraTools.map((t) => (
-                    <span key={t} className="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-xs text-slate-200">
+                  {allDisplayTools.map((t) => (
+                    <span key={t} className="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-xs text-slate-200 capitalize">
                       {t}
                     </span>
                   ))}
