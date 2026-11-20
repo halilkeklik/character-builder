@@ -18,6 +18,15 @@ export interface CharacterConcept {
   avatarUrl?: string;
 }
 
+export interface FeatChoiceData {
+  skills?: string[];
+  spellClass?: 'Cleric' | 'Druid' | 'Wizard';
+  ability?: 'int' | 'wis' | 'cha';
+  cantrips?: string[];
+  spell1?: string;
+  tools?: string[];
+}
+
 export interface CharacterSheetState {
   concept: CharacterConcept;
   selectedClass?: any;
@@ -36,8 +45,10 @@ export interface CharacterSheetState {
     lineage?: string;
     humanSkill?: string;
     humanOriginFeat?: string;
+    humanFeatChoices?: FeatChoiceData;
     aasimarRevelation?: string;
   };
+  backgroundFeatChoices?: FeatChoiceData;
   selectedWeaponMasteries: string[];
   selectedSpells: string[];
   equipmentOption: 'A' | 'B';

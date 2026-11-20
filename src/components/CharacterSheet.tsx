@@ -104,12 +104,36 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
     : [];
 
   const extraHumanSkills = (speciesName === 'Human' && humanSkill) ? [humanSkill.toLowerCase()] : [];
+  const skilledFromHuman = (state.speciesChoices?.humanFeatChoices?.skills || []).map(s => s.toLowerCase());
+  const skilledFromBg = (state.backgroundFeatChoices?.skills || []).map(s => s.toLowerCase());
 
   const allProficientSkills = Array.from(new Set([
     ...state.selectedSkills.map(s => s.toLowerCase()), 
     ...bgSkillProficiencies,
-    ...extraHumanSkills
+    ...extraHumanSkills,
+    ...skilledFromHuman,
+    ...skilledFromBg
   ]));
+
+  // Magic Initiate Spells (from Background or Human)
+  const bgInitiateSpells = [
+    ...(state.backgroundFeatChoices?.cantrips || []),
+    ...(state.backgroundFeatChoices?.spell1 ? [state.backgroundFeatChoices.spell1] : [])
+  ];
+  const humanInitiateSpells = [
+    ...(state.speciesChoices?.humanFeatChoices?.cantrips || []),
+    ...(state.speciesChoices?.humanFeatChoices?.spell1 ? [state.speciesChoices.humanFeatChoices.spell1] : [])
+  ];
+  const allDisplaySpells = Array.from(new Set([
+    ...state.selectedSpells,
+    ...bgInitiateSpells,
+    ...humanInitiateSpells
+  ]));
+
+  // Extra Tools (from Crafter or Musician)
+  const bgTools = state.backgroundFeatChoices?.tools || [];
+  const humanTools = state.speciesChoices?.humanFeatChoices?.tools || [];
+  const allExtraTools = Array.from(new Set([...bgTools, ...humanTools]));
 
   // Passive Senses
   const isPerceptionProf = allProficientSkills.includes('perception');
@@ -351,6 +375,22 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
               <p className="text-xs text-slate-300 leading-relaxed mt-1 line-clamp-3">
                 {originFeatObj ? extractEntriesText(originFeatObj.entries) : 'Granted by your background.'}
               </p>
+              {state.backgroundFeatChoices && (
+                <div className="mt-2 text-xs text-amber-300 font-semibold space-y-0.5 pt-2 border-t border-slate-850">
+                  {state.backgroundFeatChoices.skills && state.backgroundFeatChoices.skills.length > 0 && (
+                    <div>Chosen Skills: <span className="text-slate-200 capitalize">{state.backgroundFeatChoices.skills.join(', ')}</span></div>
+                  )}
+                  {state.backgroundFeatChoices.cantrips && state.backgroundFeatChoices.cantrips.length > 0 && (
+                    <div>Cantrips: <span className="text-slate-200">{state.backgroundFeatChoices.cantrips.join(', ')}</span></div>
+                  )}
+                  {state.backgroundFeatChoices.spell1 && (
+                    <div>Level 1 Spell: <span className="text-slate-200">{state.backgroundFeatChoices.spell1}</span></div>
+                  )}
+                  {state.backgroundFeatChoices.tools && state.backgroundFeatChoices.tools.length > 0 && (
+                    <div>Tools: <span className="text-slate-200">{state.backgroundFeatChoices.tools.join(', ')}</span></div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Human Versatile Feat (if selected) */}
@@ -365,15 +405,47 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
                     return extraFeat ? extractEntriesText(extraFeat.entries) : 'Granted by Human Versatility.';
                   })()}
                 </p>
+                {state.speciesChoices?.humanFeatChoices && (
+                  <div className="mt-2 text-xs text-amber-300 font-semibold space-y-0.5 pt-2 border-t border-slate-850">
+                    {state.speciesChoices.humanFeatChoices.skills && state.speciesChoices.humanFeatChoices.skills.length > 0 && (
+                      <div>Chosen Skills: <span className="text-slate-200 capitalize">{state.speciesChoices.humanFeatChoices.skills.join(', ')}</span></div>
+                    )}
+                    {state.speciesChoices.humanFeatChoices.cantrips && state.speciesChoices.humanFeatChoices.cantrips.length > 0 && (
+                      <div>Cantrips: <span className="text-slate-200">{state.speciesChoices.humanFeatChoices.cantrips.join(', ')}</span></div>
+                    )}
+                    {state.speciesChoices.humanFeatChoices.spell1 && (
+                      <div>Level 1 Spell: <span className="text-slate-200">{state.speciesChoices.humanFeatChoices.spell1}</span></div>
+                    )}
+                    {state.speciesChoices.humanFeatChoices.tools && state.speciesChoices.humanFeatChoices.tools.length > 0 && (
+                      <div>Tools: <span className="text-slate-200">{state.speciesChoices.humanFeatChoices.tools.join(', ')}</span></div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Extra Tools from Feats */}
+            {allExtraTools.length > 0 && (
+              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 print:bg-slate-50 print:border-slate-300">
+                <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
+                  Tool Proficiencies (from Feats)
+                </h3>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {allExtraTools.map((t) => (
+                    <span key={t} className="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-xs text-slate-200">
+                      {t}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
             {/* Spellcasting Summary (if applicable) */}
-            {state.selectedSpells.length > 0 && (
+            {allDisplaySpells.length > 0 && (
               <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 print:bg-slate-50 print:border-slate-300">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                    Spellcasting ({className})
+                    Spellcasting {state.selectedClass ? `(${className})` : ''}
                   </h3>
                   <div className="flex gap-2 text-xs">
                     <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-amber-300 font-bold">
@@ -386,7 +458,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
                 </div>
 
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {state.selectedSpells.map((sp) => (
+                  {allDisplaySpells.map((sp) => (
                     <span
                       key={sp}
                       className="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-xs text-slate-300"

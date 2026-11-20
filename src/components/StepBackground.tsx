@@ -1,12 +1,14 @@
 import React from 'react';
-import type { CharacterSheetState } from '../types/character';
+import type { CharacterSheetState, FeatChoiceData } from '../types/character';
 import { ALL_BACKGROUNDS, getBackgroundAllowedAbilities, getFeatByName } from '../utils/dataLoader';
 import { extractEntriesText } from '../utils/tagParser';
+import { FeatCustomizer } from './FeatCustomizer';
 import { BookOpen, Sparkles, Award, Wrench, ChevronRight, Check } from 'lucide-react';
 
 interface StepBackgroundProps {
   state: CharacterSheetState;
   onSelectBackground: (bg: any) => void;
+  onUpdateBgFeatChoices: (choices: FeatChoiceData) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -14,10 +16,13 @@ interface StepBackgroundProps {
 export const StepBackground: React.FC<StepBackgroundProps> = ({
   state,
   onSelectBackground,
+  onUpdateBgFeatChoices,
   onNext,
   onBack,
 }) => {
   const selectedBg = state.selectedBackground;
+  const featRaw = selectedBg?.feats?.[0] ? Object.keys(selectedBg.feats[0])[0] : '';
+  const featName = featRaw.split(';')[0].split('|')[0];
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 py-6">
@@ -37,9 +42,8 @@ export const StepBackground: React.FC<StepBackgroundProps> = ({
           const isSelected = selectedBg?.name === bg.name;
           const allowedStats = getBackgroundAllowedAbilities(bg).map(s => s.toUpperCase()).join(', ');
           
-          // Get origin feat name
-          const featRaw = bg.feats?.[0] ? Object.keys(bg.feats[0])[0] : '';
-          const featName = featRaw.split(';')[0].split('|')[0];
+          const rawF = bg.feats?.[0] ? Object.keys(bg.feats[0])[0] : '';
+          const fName = rawF.split(';')[0].split('|')[0];
 
           return (
             <div
@@ -64,7 +68,7 @@ export const StepBackground: React.FC<StepBackgroundProps> = ({
                 <div className="text-[11px] text-slate-400 space-y-1">
                   <div className="flex items-center gap-1 text-slate-300 font-medium">
                     <Sparkles className="w-3 h-3 text-amber-500" />
-                    <span>Feat: {featName}</span>
+                    <span>Feat: {fName}</span>
                   </div>
                 </div>
               </div>
@@ -114,8 +118,6 @@ export const StepBackground: React.FC<StepBackgroundProps> = ({
                 <Sparkles className="w-4 h-4" /> Origin Feat Granted
               </span>
               {(() => {
-                const featRaw = selectedBg.feats?.[0] ? Object.keys(selectedBg.feats[0])[0] : '';
-                const featName = featRaw.split(';')[0].split('|')[0];
                 const featObj = getFeatByName(featName);
                 return (
                   <div>
@@ -149,6 +151,16 @@ export const StepBackground: React.FC<StepBackgroundProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Sub-choices for Background Origin Feat (e.g. Magic Initiate, Skilled, Crafter, Musician) */}
+          {featName && (
+            <FeatCustomizer
+              featName={featName}
+              data={state.backgroundFeatChoices || {}}
+              onChange={onUpdateBgFeatChoices}
+              titlePrefix="Background Origin Feat"
+            />
+          )}
         </div>
       )}
 

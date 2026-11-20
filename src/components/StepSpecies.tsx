@@ -2,6 +2,7 @@ import React from 'react';
 import type { CharacterSheetState } from '../types/character';
 import { ALL_SPECIES, ORIGIN_FEATS, SPECIES_CUSTOMIZATIONS } from '../utils/dataLoader';
 import { extractEntriesText } from '../utils/tagParser';
+import { FeatCustomizer } from './FeatCustomizer';
 import { SKILL_ABILITY_MAP } from '../utils/dndRules';
 import { Dna, Eye, FastForward, Maximize2, ChevronRight, Check, Sparkles, Award } from 'lucide-react';
 
@@ -136,50 +137,62 @@ export const StepSpecies: React.FC<StepSpeciesProps> = ({
 
           {/* Human Choices (Skillful & Versatile) */}
           {customization.type === 'human' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              {/* Extra Skill */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                  <Award className="w-4 h-4" /> 1. Skillful Trait (1 Extra Skill)
-                </label>
-                <p className="text-[11px] text-slate-400">
-                  Humans gain proficiency in one additional skill of their choice.
-                </p>
-                <select
-                  value={choices.humanSkill || ''}
-                  onChange={(e) => onUpdateSpeciesChoices({ humanSkill: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 capitalize font-semibold focus:border-amber-500"
-                >
-                  <option value="">Select an Extra Skill</option>
-                  {Object.keys(SKILL_ABILITY_MAP).map((skill) => (
-                    <option key={skill} value={skill}>
-                      {skill} ({SKILL_ABILITY_MAP[skill].toUpperCase()})
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Extra Skill */}
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <Award className="w-4 h-4" /> 1. Skillful Trait (1 Extra Skill)
+                  </label>
+                  <p className="text-[11px] text-slate-400">
+                    Humans gain proficiency in one additional skill of their choice.
+                  </p>
+                  <select
+                    value={choices.humanSkill || ''}
+                    onChange={(e) => onUpdateSpeciesChoices({ humanSkill: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 capitalize font-semibold focus:border-amber-500"
+                  >
+                    <option value="">Select an Extra Skill</option>
+                    {Object.keys(SKILL_ABILITY_MAP).map((skill) => (
+                      <option key={skill} value={skill}>
+                        {skill} ({SKILL_ABILITY_MAP[skill].toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Extra Origin Feat */}
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" /> 2. Versatile Trait (1 Extra Origin Feat)
+                  </label>
+                  <p className="text-[11px] text-slate-400">
+                    Humans gain an extra Origin Feat at 1st level.
+                  </p>
+                  <select
+                    value={choices.humanOriginFeat || ''}
+                    onChange={(e) => onUpdateSpeciesChoices({ humanOriginFeat: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 font-semibold focus:border-amber-500"
+                  >
+                    <option value="">Select an Extra Origin Feat</option>
+                    {ORIGIN_FEATS.map((feat: any) => (
+                      <option key={feat.name} value={feat.name}>
+                        {feat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Extra Origin Feat */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4" /> 2. Versatile Trait (1 Extra Origin Feat)
-                </label>
-                <p className="text-[11px] text-slate-400">
-                  Humans gain an extra Origin Feat at 1st level.
-                </p>
-                <select
-                  value={choices.humanOriginFeat || ''}
-                  onChange={(e) => onUpdateSpeciesChoices({ humanOriginFeat: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 font-semibold focus:border-amber-500"
-                >
-                  <option value="">Select an Extra Origin Feat</option>
-                  {ORIGIN_FEATS.map((feat: any) => (
-                    <option key={feat.name} value={feat.name}>
-                      {feat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Sub-choices for the selected Human Origin Feat (e.g. Skilled, Magic Initiate, Crafter, Musician) */}
+              {choices.humanOriginFeat && (
+                <FeatCustomizer
+                  featName={choices.humanOriginFeat}
+                  data={choices.humanFeatChoices || {}}
+                  onChange={(updated) => onUpdateSpeciesChoices({ humanFeatChoices: updated })}
+                  titlePrefix="Human Versatile Feat"
+                />
+              )}
             </div>
           )}
 

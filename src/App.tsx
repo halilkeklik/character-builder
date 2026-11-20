@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { CharacterSheetState, WizardStep, AbilityKey } from './types/character';
+import type { CharacterSheetState, WizardStep, AbilityKey, FeatChoiceData } from './types/character';
 import { ALL_CLASSES, ALL_SPECIES, ALL_BACKGROUNDS, getBackgroundAllowedAbilities } from './utils/dataLoader';
 import { Navbar } from './components/Navbar';
 import { StepConcept } from './components/StepConcept';
@@ -122,12 +122,21 @@ export const App: React.FC = () => {
     setState((prev) => ({
       ...prev,
       selectedBackground: bg,
+      backgroundFeatChoices: {},
       backgroundBonus: {
         ...prev.backgroundBonus,
         first: allowed[0] || 'str',
         second: allowed[1] || 'con',
         third: allowed[2] || 'dex',
       },
+    }));
+  };
+
+  // Background feat choices updates
+  const handleUpdateBgFeatChoices = (choices: FeatChoiceData) => {
+    setState((prev) => ({
+      ...prev,
+      backgroundFeatChoices: choices,
     }));
   };
 
@@ -270,6 +279,7 @@ export const App: React.FC = () => {
           <StepBackground
             state={state}
             onSelectBackground={handleSelectBackground}
+            onUpdateBgFeatChoices={handleUpdateBgFeatChoices}
             onNext={() => setStep('abilities')}
             onBack={() => setStep('species')}
           />
