@@ -24,6 +24,7 @@ import {
 } from '../utils/dataLoader';
 import { calculateEquippedAC } from '../utils/equipmentHelper';
 import { extractEntriesText } from '../utils/tagParser';
+import { PrintableCharacterSheet } from './PrintableCharacterSheet';
 import confetti from 'canvas-confetti';
 import { 
   Shield, 
@@ -50,7 +51,8 @@ import {
   Layers,
   Coins,
   Package,
-  ShieldCheck
+  ShieldCheck,
+  FileText
 } from 'lucide-react';
 
 interface CharacterSheetProps {
@@ -77,7 +79,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
   onEditStep,
   onExport,
 }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'combat' | 'spells' | 'inventory' | 'features'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'combat' | 'spells' | 'inventory' | 'features' | 'printPreview'>('all');
   const [expandedSpells, setExpandedSpells] = useState<Record<string, boolean>>({});
   const [expandedMasteries, setExpandedMasteries] = useState<Record<string, boolean>>({});
   const [spellSearch, setSpellSearch] = useState('');
@@ -356,9 +358,10 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 py-6 print:py-0 print:max-w-full">
-      {/* Top Action Bar (Hidden during print) */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800 print:hidden">
+    <>
+      <div className="max-w-6xl mx-auto space-y-6 py-6 dnd-screen-sheet print:hidden">
+        {/* Top Action Bar (Hidden during print) */}
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
         <div>
           <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Character Complete</span>
           <h2 className="text-xl font-serif font-bold text-slate-100">{state.concept.name || 'Unnamed Character'}</h2>
@@ -518,6 +521,16 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
             >
               <Package className="w-3.5 h-3.5" /> Inventory & Wealth ({state.inventory?.items?.length || 0})
             </button>
+            <button
+              onClick={() => setActiveTab('printPreview')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'printPreview'
+                  ? 'bg-amber-600 text-slate-950 font-bold shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" /> Print Sheet Preview
+            </button>
           </div>
 
           {allDisplaySpells.length > 0 && (
@@ -531,6 +544,53 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
             </div>
           )}
         </div>
+
+        {/* Print Preview Mode */}
+        {activeTab === 'printPreview' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900 border border-amber-500/40 shadow-lg">
+              <div className="flex items-center gap-3">
+                <Printer className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h3 className="font-serif font-bold text-amber-200">Printable Character Sheet Preview</h3>
+                  <p className="text-xs text-slate-400">High-contrast, A4/Letter paper format with all stats and equipment</p>
+                </div>
+              </div>
+              <button
+                onClick={() => window.print()}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer"
+              >
+                <Printer className="w-4 h-4" /> Print / Save as PDF
+              </button>
+            </div>
+            
+            <div className="bg-neutral-800 p-4 sm:p-6 rounded-2xl overflow-x-auto shadow-2xl flex justify-center border border-slate-800">
+              <div className="shadow-2xl rounded-lg overflow-hidden max-w-full">
+                <PrintableCharacterSheet
+                  state={state}
+                  totalScores={totalScores}
+                  mods={mods}
+                  profBonus={profBonus}
+                  ac={ac}
+                  acCalculation={acCalculation}
+                  maxHP={maxHP}
+                  speed={speed}
+                  hitDieFaces={hitDieFaces}
+                  passivePerception={passivePerception}
+                  classSaveProficiencies={classSaveProficiencies}
+                  allProficientSkills={allProficientSkills}
+                  weaponAttacks={weaponAttacks}
+                  allDisplayTools={allDisplayTools}
+                  formattedSpells={formattedSpells}
+                  spellSaveDC={spellSaveDC}
+                  spellAttackBonus={spellAttackBonus}
+                  primaryStatKey={primaryStatKey}
+                  featName={featName}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 1. ABILITY SCORES, SAVES & SKILLS */}
         {(activeTab === 'all' || activeTab === 'combat') && (
@@ -1164,5 +1224,31 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({
         )}
       </div>
     </div>
-  );
+
+    {/* Dedicated Printable Sheet (Rendered during window.print()) */}
+    <div className="hidden print:block dnd-print-sheet">
+      <PrintableCharacterSheet
+        state={state}
+        totalScores={totalScores}
+        mods={mods}
+        profBonus={profBonus}
+        ac={ac}
+        acCalculation={acCalculation}
+        maxHP={maxHP}
+        speed={speed}
+        hitDieFaces={hitDieFaces}
+        passivePerception={passivePerception}
+        classSaveProficiencies={classSaveProficiencies}
+        allProficientSkills={allProficientSkills}
+        weaponAttacks={weaponAttacks}
+        allDisplayTools={allDisplayTools}
+        formattedSpells={formattedSpells}
+        spellSaveDC={spellSaveDC}
+        spellAttackBonus={spellAttackBonus}
+        primaryStatKey={primaryStatKey}
+        featName={featName}
+      />
+    </div>
+  </>
+);
 };
